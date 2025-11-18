@@ -61,13 +61,7 @@ df_all = (
     df_all
     .withColumn("dt_estoque", F.col("dt"))
     .drop("dt")
-    .withColumn("ano_estoque", F.year("dt_estoque"))
-    .withColumn("mes_estoque", F.month("dt_estoque"))
-    .withColumn("ano_mes_estoque", F.date_format("dt_estoque", "yyyy-MM"))
-    # Dia da semana numérico (1 = domingo) e abreviação textual
-    .withColumn("dia_semana_estoque_num", F.dayofweek("dt_estoque"))
-    .withColumn("dia_semana_estoque", F.date_format("dt_estoque", "E"))
-    # Faixa de estoque
+    # Faixa de estoque simples (só pra enriquecer um pouco)
     .withColumn(
         "faixa_estoque",
         F.when(F.col("qtd_estoque") < 105, F.lit("Baixo"))
@@ -79,11 +73,6 @@ df_all = (
 
 ordered_cols = [
     "dt_estoque",
-    "ano_estoque",
-    "mes_estoque",
-    "ano_mes_estoque",
-    "dia_semana_estoque_num",
-    "dia_semana_estoque",
     "id_loja",
     "id_produto",
     "qtd_estoque",
@@ -115,17 +104,12 @@ if not spark.catalog.tableExists(table_path):
     logger.info("Tabela criada com sucesso. Aplicando metadados e comentários...")
 
     column_descriptions = {
-        "dt_estoque":             "Data de referência do saldo de estoque.",
-        "ano_estoque":            "Ano da data de estoque.",
-        "mes_estoque":            "Mês numérico da data de estoque.",
-        "ano_mes_estoque":        "Ano e mês da data de estoque no formato yyyy-MM.",
-        "dia_semana_estoque_num": "Dia da semana numérico (1=domingo, 7=sábado).",
-        "dia_semana_estoque":     "Dia da semana abreviado (ex.: Mon, Tue).",
-        "id_loja":                "Identificador da loja.",
-        "id_produto":             "Identificador do produto.",
-        "qtd_estoque":            "Quantidade em estoque para o produto/loja/data.",
-        "faixa_estoque":          "Faixa categorizada da quantidade de estoque (Baixo, Médio, Alto).",
-        "ts_carga_silver":        "Timestamp de carga na camada Silver.",
+        "dt_estoque":      "Data de referência do saldo de estoque.",
+        "id_loja":         "Identificador da loja.",
+        "id_produto":      "Identificador do produto.",
+        "qtd_estoque":     "Quantidade em estoque para o produto/loja/data.",
+        "faixa_estoque":   "Faixa categorizada da quantidade de estoque (Baixo, Médio, Alto), apenas para simulação.",
+        "ts_carga_silver": "Timestamp de carga na camada Silver.",
     }
 
     DeltaTableMetadataManager.add_column_comments(table_path, column_descriptions)

@@ -63,11 +63,6 @@ df_all = spark.sql(query)
 # Tratamentos / enriquecimentos
 df_all = (
     df_all
-    .withColumn("ano_venda", F.year("dt_venda"))
-    .withColumn("mes_venda", F.month("dt_venda"))
-    .withColumn("ano_mes_venda", F.date_format("dt_venda", "yyyy-MM"))
-    .withColumn("dia_semana_venda_num", F.dayofweek("dt_venda"))
-    .withColumn("dia_semana_venda", F.date_format("dt_venda", "E"))
     # Receita bruta = receita líquida + desconto
     .withColumn("receita_bruta", F.col("receita") + F.col("desconto"))
     # Percentual de desconto
@@ -93,11 +88,6 @@ df_all = (
 
 ordered_cols = [
     "dt_venda",
-    "ano_venda",
-    "mes_venda",
-    "ano_mes_venda",
-    "dia_semana_venda_num",
-    "dia_semana_venda",
     "id_pedido",
     "id_loja",
     "id_produto",
@@ -135,23 +125,18 @@ if not spark.catalog.tableExists(table_path):
     logger.info("Tabela criada com sucesso. Aplicando metadados e comentários...")
 
     column_descriptions = {
-        "dt_venda":              "Data da venda (data do pedido/item).",
-        "ano_venda":             "Ano da data de venda.",
-        "mes_venda":             "Mês numérico da data de venda.",
-        "ano_mes_venda":         "Ano e mês da data de venda no formato yyyy-MM.",
-        "dia_semana_venda_num":  "Dia da semana numérico (1=domingo, 7=sábado).",
-        "dia_semana_venda":      "Dia da semana abreviado (ex.: Mon, Tue).",
-        "id_pedido":             "Identificador sintético do pedido (data-loja-sequência).",
-        "id_loja":               "Identificador da loja.",
-        "id_produto":            "Identificador do produto vendido.",
-        "qtd":                   "Quantidade de itens na linha da venda.",
-        "receita_bruta":         "Valor bruto da venda do item (receita líquida + desconto).",
-        "receita":               "Receita líquida do item após desconto.",
-        "desconto":              "Valor de desconto concedido na linha do item.",
-        "perc_desconto":         "Percentual de desconto sobre a receita bruta da linha.",
-        "vl_unitario_medio":     "Valor unitário médio (receita bruta dividida pela quantidade).",
-        "ts_bronze":             "Timestamp de inserção do registro na Bronze.",
-        "ts_carga_silver":       "Timestamp de carga na camada Silver.",
+        "dt_venda":          "Data da venda (data do pedido/item).",
+        "id_pedido":         "Identificador sintético do pedido (data-loja-sequência).",
+        "id_loja":           "Identificador da loja.",
+        "id_produto":        "Identificador do produto vendido.",
+        "qtd":               "Quantidade de itens na linha da venda.",
+        "receita_bruta":     "Valor bruto da venda do item (receita líquida + desconto).",
+        "receita":           "Receita líquida do item após desconto.",
+        "desconto":          "Valor de desconto concedido na linha do item.",
+        "perc_desconto":     "Percentual de desconto sobre a receita bruta da linha.",
+        "vl_unitario_medio": "Valor unitário médio (receita bruta dividida pela quantidade).",
+        "ts_bronze":         "Timestamp de inserção do registro na Bronze.",
+        "ts_carga_silver":   "Timestamp de carga na camada Silver.",
     }
 
     DeltaTableMetadataManager.add_column_comments(table_path, column_descriptions)
