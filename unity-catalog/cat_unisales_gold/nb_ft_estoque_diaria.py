@@ -61,58 +61,26 @@ logger.info(
     f"Lojas: {df_lojas.count()}"
 )
 
-# Seleção de colunas relevantes (dimensões)
-df_produtos_sel = df_produtos.select(
-    "id_produto",
-    "sku",
-    "nm_produto",
-    "categoria",
-    "marca",
-    "faixa_preco",
-    "nivel_popularidade",
-    "is_produto_estrela"
+logger.info("Construindo fato de estoque diário com chaves e métricas...")
+
+df_fato = (
+    df_estoque
+    .select(
+        "dt_estoque",
+        "id_loja",
+        "id_produto",
+        "faixa_estoque",
+        "qtd_estoque",
+        "ts_carga_silver",
+    )
+    .withColumn("ts_carga_gold", F.current_timestamp())
 )
-
-df_lojas_sel = df_lojas.select(
-    "id_loja",
-    "id_loja_int",
-    "nm_loja",
-    "cidade",
-    "regiao_loja",
-    "uf",
-    "is_capital"
-)
-
-# Join para montar a fato de estoque diário
-logger.info("Realizando joins entre estoque, produtos e lojas...")
-
-df_join = (
-    df_estoque.alias("e")
-    .join(df_produtos_sel.alias("p"), on="id_produto", how="left")
-    .join(df_lojas_sel.alias("l"), on="id_loja", how="left")
-)
-
-# Coluna técnica da Gold
-df_fato = df_join.withColumn("ts_carga_gold", F.current_timestamp())
 
 # Reordenação de colunas (dimensões primeiro, métricas depois)
 ordered_cols = [
     "dt_estoque",
     "id_loja",
-    "id_loja_int",
-    "nm_loja",
-    "cidade",
-    "regiao_loja",
-    "uf",
-    "is_capital",
     "id_produto",
-    "sku",
-    "nm_produto",
-    "categoria",
-    "marca",
-    "faixa_preco",
-    "nivel_popularidade",
-    "is_produto_estrela",
     "faixa_estoque",
     "qtd_estoque",
     "ts_carga_silver",
@@ -143,36 +111,21 @@ if not spark.catalog.tableExists(table_path):
     logger.info("Tabela criada com sucesso. Aplicando metadados e comentários...")
 
     column_descriptions = {
-        "dt_estoque":          "Data de referência do snapshot de estoque.",
-        "id_loja":             "Identificador da loja (string).",
-        "id_loja_int":         "Identificador numérico da loja.",
-        "nm_loja":             "Nome descritivo da loja.",
-        "cidade":              "Cidade onde a loja está localizada.",
-        "regiao_loja":         "Região categorizada da loja (Grande Vitória, Interior, etc.).",
-        "uf":                  "Unidade federativa da loja.",
-        "is_capital":          "Flag indicando se a loja está na capital (Vitória).",
-        "id_produto":          "Identificador do produto.",
-        "sku":                 "Código SKU do produto.",
-        "nm_produto":          "Nome descritivo do produto.",
-        "categoria":           "Categoria do produto.",
-        "marca":               "Marca do produto.",
-        "faixa_preco":         "Faixa de preço categorizada (Baixo, Médio, Alto).",
-        "nivel_popularidade":  "Nível de popularidade (Top, Média, Long tail) derivado do rank_prod.",
-        "is_produto_estrela":  "Flag indicando se o produto está entre os Top 10 de popularidade.",
-        "faixa_estoque":       "Faixa categorizada de estoque (Baixo, Médio, Alto) no dia.",
-        "qtd_estoque":         "Quantidade em estoque do produto na loja e dia (snapshot diário).",
-        "ts_carga_silver":     "Timestamp de carga do registro na camada Silver de estoque.",
-        "ts_carga_gold":       "Timestamp de carga na camada Gold.",
+        "dt_estoque":      "Data de referência do snapshot de estoque (FK para dim_calendario.dt_calendario).",
+        "id_loja":         "Identificador da loja (FK para dim_lojas.id_loja).",
+        "id_produto":      "Identificador do produto (FK para dim_produtos.id_produto).",
+        "faixa_estoque":   "Faixa categorizada de estoque (Baixo, Médio, Alto) no dia.",
+        "qtd_estoque":     "Quantidade em estoque do produto na loja e dia (snapshot diário).",
+        "ts_carga_silver": "Timestamp de carga do registro na camada Silver de estoque.",
+        "ts_carga_gold":   "Timestamp de carga na camada Gold.",
     }
 
     DeltaTableMetadataManager.add_column_comments(table_path, column_descriptions)
 
     table_description = (
         "Fato diária de estoque na camada Gold do comércio Unisales. "
-        "Cada linha representa o snapshot de estoque de um produto em uma loja em uma data, "
-        "enriquecido com atributos de loja e produto. "
-        "Usada para análises de cobertura de estoque, ruptura e correlação com vendas "
-        "em dashboards e no Genie."
+        "Cada linha representa o snapshot de estoque de um produto em uma loja e data, "
+        "referenciando dimensões de loja e produto via chaves (id_loja, id_produto)."
     )
     DeltaTableMetadataManager.add_table_comment(table_path, table_description)
 
