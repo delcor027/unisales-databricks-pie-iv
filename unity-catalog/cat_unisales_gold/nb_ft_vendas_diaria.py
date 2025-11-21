@@ -123,21 +123,7 @@ logger.info("Agregando métricas por dt_venda, loja e produto...")
 chaves_fato = [
     "dt_venda",
     "id_loja",
-    "id_loja_int",
-    "nm_loja",
-    "cidade",
-    "regiao_loja",
-    "uf",
-    "is_capital",
     "id_produto",
-    "sku",
-    "nm_produto",
-    "categoria",
-    "marca",
-    "faixa_preco",
-    "nivel_popularidade",
-    "is_produto_estrela",
-    "faixa_estoque",
 ]
 
 # Agregações
@@ -205,21 +191,7 @@ df_fato = df_fato.drop("aux_sum_receita_bruta", "aux_sum_desconto")
 ordered_cols = [
     "dt_venda",
     "id_loja",
-    "id_loja_int",
-    "nm_loja",
-    "cidade",
-    "regiao_loja",
-    "uf",
-    "is_capital",
     "id_produto",
-    "sku",
-    "nm_produto",
-    "categoria",
-    "marca",
-    "faixa_preco",
-    "nivel_popularidade",
-    "is_produto_estrela",
-    "faixa_estoque",
     "qtd_vendida",
     "qtde_pedidos",
     "receita_bruta_total",
@@ -232,6 +204,7 @@ ordered_cols = [
     "estoque_final_dia",
     "ts_carga_gold",
 ]
+
 
 df_fato = df_fato.select(*ordered_cols)
 
@@ -258,33 +231,19 @@ if not spark.catalog.tableExists(table_path):
     logger.info("Tabela criada com sucesso. Aplicando metadados e comentários...")
 
     column_descriptions = {
-        "dt_venda":             "Data da venda (grão diário da fato).",
-        "id_loja":              "Identificador da loja (string) herdado da Silver.",
-        "id_loja_int":          "Identificador numérico da loja (cast de id_loja).",
-        "nm_loja":              "Nome descritivo da loja.",
-        "cidade":               "Cidade onde a loja está localizada.",
-        "regiao_loja":          "Região categorizada da loja (ex.: Grande Vitória, Interior).",
-        "uf":                   "Unidade federativa da loja (estado).",
-        "is_capital":           "Flag booleana indicando se a loja está na capital (Vitória).",
-        "id_produto":           "Identificador do produto.",
-        "sku":                  "Código SKU do produto.",
-        "nm_produto":           "Nome descritivo do produto.",
-        "categoria":            "Categoria do produto (Bebidas, Acessórios, etc.).",
-        "marca":                "Marca do produto.",
-        "faixa_preco":          "Faixa de preço categorizada (Baixo, Médio, Alto).",
-        "nivel_popularidade":   "Nível de popularidade (Top, Média, Long tail) derivado do rank_prod.",
-        "is_produto_estrela":   "Flag booleana indicando se o produto está entre os Top 10 de popularidade.",
-        "faixa_estoque":        "Faixa categorizada da quantidade de estoque diário (Baixo, Médio, Alto).",
+        "dt_venda":             "Data da venda (FK para dim_calendario.dt_calendario).",
+        "id_loja":              "Identificador da loja (FK para dim_lojas.id_loja).",
+        "id_produto":           "Identificador do produto (FK para dim_produtos.id_produto).",
         "qtd_vendida":          "Quantidade total vendida do produto na loja e dia.",
         "qtde_pedidos":         "Quantidade de pedidos distintos que contiveram o produto na loja e dia.",
-        "receita_bruta_total":  "Receita bruta total do item (soma de receita_bruta) na loja e dia.",
+        "receita_bruta_total":  "Receita bruta total da linha (soma de receita_bruta) na loja e dia.",
         "receita_liquida_total":"Receita líquida total (após descontos) na loja e dia.",
         "desconto_total":       "Total de descontos concedidos na loja e dia.",
         "perc_desconto_medio":  "Percentual médio de desconto (desconto_total / receita_bruta_total).",
         "vl_unitario_medio_dia":"Valor unitário médio ponderado pela quantidade vendida no dia.",
         "ticket_medio_dia":     "Ticket médio diário (receita_liquida_total / qtde_pedidos).",
-        "estoque_medio_dia":    "Estoque médio diário do produto na loja, baseado na Silver de estoque.",
-        "estoque_final_dia":    "Estoque final do produto na loja ao fim do dia (snapshot de estoque).",
+        "estoque_medio_dia":    "Estoque médio diário do produto na loja (média de qtd_estoque).",
+        "estoque_final_dia":    "Estoque final do produto na loja ao fim do dia (max de qtd_estoque).",
         "ts_carga_gold":        "Timestamp de carga na camada Gold.",
     }
 
